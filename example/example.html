@@ -7,86 +7,121 @@
   <script type="text/javascript" src="../lrc.js"></script>
   <script type="text/javascript">
   $(function(){
-    var $lrcInput = $("#lrc")
-      , $out = $("#out")
-      , $timer = $("#timer")
+    var $lrcInput = $("#lrc")	// textarea tag for displaying lyrics
+      , $out = $("#out")		// div tag for lyrics line
+      , $timer = $("#timer")	// div tag for time runner
       , lrc
       ;
-    
+
+/* lrc.js  prototype
+*	play(time)
+*	pauseToggle(time)
+*	seek(offset)
+*	stop()
+*
+*
+*	showTimer prototype
+*	showTimer(time)
+*	pause()
+*	seek(offset)
+*	stop()
+*
+*
+*	laodLrc(path)
+*	parse(string)
+*
+*
+*
+*
+*
+*
+*
+*
+*
+*/
+	// click the lyric name and
+	//   invoke loadLrc() method to load [1-4].lrc
     $("#list>li").click(function(i){
-      loadLrc('lrcs/' + this.innerHTML)
+      loadLrc('lrcs/' + this.innerHTML);
     })
-    
+
+	// button 'parse' to parse content in the lyrics textarea
     $("#parse").click(function(){
       lrc = parse($lrcInput.val());
       ;
     });
-    
+
+	// button 'play' to start a time and run lyrics
     $("#play").click(function(){
-      var s = $("#startTime").val() * 1000 || 0
-      lrc.play(s);
-      showTimer(s);
-    });
-    
+      var s = $("#startTime").val() * 1000 || 0;	// start from '#startTime' value or from 0
+      lrc.play(s);									// invoke lrc.play(time)
+      showTimer(s);									// invoke showTimer(time)
+  	});
+
+	// pause
     $("#pause").click(function(){
-      lrc.pauseToggle();
-      showTimer.pause();
-    })
-    
+      lrc.pauseToggle();							// lrc.pauseToggle()
+      showTimer.pause();							// showTimer.pause()
+  	});
+
     $("#stop").click(function(){
       lrc.stop();
       showTimer.stop();
-    })
-    
+  	});
+
     $("#seek").click(function(){
       var offset = $("#startTime").val() * 1 || 0
       lrc.seek(offset);
       showTimer.seek(offset);
-    })
-    
-    
+  	});
+
     var loadLrc = function(url){
       $lrcInput.val('歌词加载中..');
-      
-      lrc && lrc.stop();
-      showTimer.stop();
-      
+
+      lrc && lrc.stop();	// stop lrc
+      showTimer.stop();		// stop timer
+
       $.ajax(url || 'lrcs/1.lrc', {dataType: 'plain'}).done(function(txt){
-        $lrcInput.val(txt);
-        lrc = parse(txt)
+		  console.log('ajax done');	// bugs: ajax().done() won't work
+        	$lrcInput.val(txt);
+        	lrc = parse(txt)
       })
     };
-    
+
     var showTimer = (function(){
-      var timeStamp, timer
-        , state, curTime
+      var timeStamp 	// start time Date()
+	  	, timer 		// setTimeout() instance
+        , state   		// Boolean playing state   true for playing
+		, curTime 		// the time current lyrics is on
         ;
       var fn = function(time){
         time = time || 0;
         timeStamp = Date.now() - time;
         show(time);
       };
-      
+
       fn.pause = function(){
         state ? fn.stop() : fn(curTime);
       };
-      
+
       fn.stop = function(){
         clearTimeout(timer);
         state = false;
       };
-      
+
       fn.seek = function(offset){
         timeStamp -= offset;
         if(!state) curTime += offset;
       };
-      
-      function show(time){
+
+      function show(time){ // parse time into  mm:ss.sss
         var sec = ((time / 1000) % 60).toFixed(2)
           , min = Math.floor(time / 60000)
         curTime = time;
+
         $timer.text(min + ':' + sec);
-        clearTimeout(timer);
+        clearTimeout(timer);	// clean last timer
+
         timer = setTimeout(function(){
           show(Date.now() - timeStamp);
         }, 10);
@@ -94,18 +129,19 @@
       }
       return fn;
     })();
-    
+
     var parse = function (txt){
       return new Lrc(txt, function(text, extra){
         if(!text){ return }
-        var lrcs = this.lrc.split('\n');
-        var span = $("<span>").text(lrcs[extra.originLineNum]).hide();
-        $out.empty().append(span.fadeIn('slow'))
+
+        var lrcs = this.lrc.split('\n');	// split lyrics (multilines) into array
+        var span = $("<span>").text(lrcs[extra.originLineNum]).hide(); // make a span tag with next line of lyrics and hide it
+        $out.empty().append(span.fadeIn('slow'));						// clear last lyric and the make new line fadein
       });
     };
-    
+
     $("#parse").click();
-  })
+});
   </script>
 </head>
 <body>
@@ -117,7 +153,7 @@
 [offset:0]
 [by:(虾米音乐网)www.xiami.com]
 [00:00.00] 欢迎您
-[00:01.00]陈淑桦：梦醒时分 
+[00:01.00]陈淑桦：梦醒时分
 [00:28.91]你说你爱了不该爱的人
 [00:38.03]你的心中满是伤痕
 [00:41.28]你说你犯了不该犯的错

@@ -5,20 +5,20 @@
 
 var Lrc = (function(){
   Date.now = Date.now || (new Date).getTime;
-  var timeExp = /\[(\d{2,})\:(\d{2})(?:\.(\d{2,3}))?\]/g
-    , tagsRegMap = {
+  var timeExp = /\[(\d{2,})\:(\d{2})(?:\.(\d{2,3}))?\]/g // time RegularExpression
+                                                         // parse [00:00.000] or [00:00.00]
+    , tagsRegMap = {                // meta messages map
         title: 'ti'
       , artist: 'ar'
       , album: 'al'
       , offset: 'offset'
       , by: 'by'
-    }
-    ;
-  
+    };
+
   /**
    * lrc parser
-   * @param {string} lrc lrc 歌词字符串
-   * @param {function} [handler] 
+   * @param {string} lrc lrc 歌词字符串  String from a lyric file (*.lrc): Note: multilines
+   * @param {function} [handler]
    * @constructor
    */
   var Parser = function(lrc, handler){
@@ -29,18 +29,18 @@ var Lrc = (function(){
     this.lines = [];//详细的歌词信息
     this.txts = [];
     this.isLrc = Parser.isLrc(lrc);
-    
+
     this.curLine = 0;//
     this.state = 0;// 0: stop, 1: playing
-        
+
     var res, line, time, lines = lrc.split(/\n/)
       , _last;
-    
+
     for(var tag in tagsRegMap){
       res = lrc.match(new RegExp('\\[' + tagsRegMap[tag] + ':([^\\]]*)\\]', 'i'));
       this.tags[tag] = res && res[1] || '';
     }
-    
+
     timeExp.lastIndex = 0;
     for(var i = 0, l = lines.length; i < l; i++){
       while(time = timeExp.exec(lines[i])){
@@ -55,12 +55,12 @@ var Lrc = (function(){
         this.txts.push(line);
       }
     }
-    
+
     this.lines.sort(function(a, b){
       return a.time - b.time;
     });
   };
-  
+
   //按照时间点确定歌词行数
   function findCurLine(time){
     for(var i = 0, l = this.lines.length; i < l; i++){
@@ -70,37 +70,37 @@ var Lrc = (function(){
     }
     return i;
   }
-  
+
   function focusLine(i){
     this.handler.call(this, this.lines[i].txt, {
         originLineNum: this.lines[i].originLineNum
       , lineNum: i
     })
   }
-  
+
   //lrc stream control and output
   Parser.prototype = {
       //time: 播放起点, skipLast: 是否忽略即将播放歌词的前一条(可能是正在唱的)
       play: function(time, skipLast){
         var that = this;
-        
+
         time = time || 0;
         that._startStamp = Date.now() - time;//相对开始时间戳
         that.state = 1;
-        
+
         if(that.isLrc){
           that.curLine = findCurLine.call(that, time);
-          
+
           if(!skipLast){
             that.curLine && focusLine.call(that, that.curLine - 1);
           }
-          
+
           if(that.curLine < that.lines.length){
-          
+
             clearTimeout(that._timer);
             that._timer = setTimeout(function loopy(){
               focusLine.call(that, that.curLine++);
-              
+
               if(that.lines[that.curLine]){
                 that._timer = setTimeout(function(){
                   loopy();
@@ -132,13 +132,17 @@ var Lrc = (function(){
         clearTimeout(this._timer);
       }
   };
-    
+
+  // trim out spaces at the front or end of lyric
   Parser.trim = function(lrc){
     return lrc.replace(/(^\s*|\s*$)/m, '')
   };
+
+  // is parameter is a lyric start with timestamp
   Parser.isLrc = function(lrc){
     return timeExp.test(lrc);
   };
+
   return Parser;
 })();
 
